@@ -25,7 +25,15 @@ struct MoveCommand: Command {
                     }
                     return true
                 } else {
-                    return moveOut(io, window: currentWindow, direction: direction)
+                    if moveOut(io, window: currentWindow, direction: direction) {
+                        return true
+                    } else if args.boundaries == .allMonitorsUnionFrame {
+                        let moveNodeToMonitor = args.moveNodeToMonitor.copy(\.target, .initialized(.directional(direction)))
+                        return MoveNodeToMonitorCommand(args: moveNodeToMonitor).run(env, io)
+                    } else {
+                        io.err("Window is not moved. Tip: use --fail-if-noop to exit with non-zero exit code")
+                        return !args.failIfNoop
+                    }
                 }
             case .workspace: // floating window
                 return io.err("moving floating windows isn't yet supported") // todo
@@ -56,6 +64,10 @@ private func moveOut(_ io: CmdIo, window: Window, direction: CardinalDirection) 
             bindTo = parent
             bindToIndex = innerMostChild.ownIndex + direction.insertionOffset
         case .workspace(let parent): // create implicit container
+            if !canMoveOutInDirection(window: window, direction: direction) {
+                return false
+            }
+
             let prevRoot = parent.rootTilingContainer
             prevRoot.unbindFromParent()
             // Force tiles layout
@@ -79,6 +91,23 @@ private func moveOut(_ io: CmdIo, window: Window, direction: CardinalDirection) 
         index: bindToIndex
     )
     return true
+}
+
+private func canMoveOutInDirection(window: Window, direction: CardinalDirection) -> Bool {
+    let rootTilingContainer = window.nodeWorkspace?.rootTilingContainer
+    if window.parent != rootTilingContainer {
+        return true
+    }
+    if rootTilingContainer?.orientation != direction.orientation {
+        return true
+    }
+
+    switch direction {
+        case .left, .up:
+            return window.ownIndex != 0
+        case .right, .down:
+            return window.ownIndex != window.parent.children.count - 1
+    }
 }
 
 private func deepMoveIn(window: Window, into container: TilingContainer, moveDirection: CardinalDirection) {
