@@ -19,13 +19,14 @@ public func errorT<T>(
     let message =
         """
         Please report to:
-            https://github.com/nikitabobko/AeroSpace/issues
+            https://github.com/nikitabobko/AeroSpace/discussions/categories/potential-bugs
             Please describe what you did to trigger this error
 
         Message: \(_message)
         Version: \(aeroSpaceAppVersion)
         Git hash: \(gitHash)
         Date: \(Date())
+        macOS version: \(ProcessInfo().operatingSystemVersionString)
         Coordinate: \(file):\(line):\(column) \(function)
         recursionDetectorDuringFailure: \(recursionDetectorDuringFailure)
         cli: \(isCli)
