@@ -27,6 +27,7 @@ enum PlainInterVar: String, CaseIterable {
 }
 
 extension [AeroObj] {
+    @MainActor
     func format(_ format: [StringInterToken]) -> Result<[String], String> {
         var cellTable: [[Cell<String>]] = []
         for obj in self {
@@ -81,6 +82,8 @@ enum FormatVar: Equatable {
 
     enum WorkspaceFormatVar: String, Equatable, CaseIterable {
         case workspaceName = "workspace"
+        case workspaceFocused = "workspace-is-focused"
+        case workspaceVisible = "workspace-is-visible"
     }
 
     enum AppFormatVar: String, Equatable, CaseIterable {
@@ -152,6 +155,7 @@ private struct Cell<T> {
 }
 
 extension String {
+    @MainActor
     func expandFormatVar(obj: AeroObj) -> Result<Primitive, String> {
         let formatVar = self.toFormatVar()
         switch (obj, formatVar) {
@@ -182,6 +186,8 @@ extension String {
             case (.workspace(let w), .workspace(let f)):
                 return switch f {
                     case .workspaceName: .success(.string(w.name))
+                    case .workspaceVisible: .success(.bool(w.isVisible))
+                    case .workspaceFocused: .success(.bool(focus.workspace == w))
                 }
             case (.monitor(let m), .monitor(let f)):
                 return switch f {

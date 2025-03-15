@@ -2,6 +2,7 @@
 import Common
 import XCTest
 
+@MainActor
 final class ConfigTest: XCTestCase {
     func testParseI3Config() {
         let toml = try! String(contentsOf: projectRoot.appending(component: "docs/config-examples/i3-like-config-example.toml"))
@@ -379,5 +380,13 @@ final class ConfigTest: XCTestCase {
         assertEquals(dvorakErrors, [])
         assertEquals(dvorakConfig.keyMapping, KeyMapping(preset: .dvorak, rawKeyNotationToKeyCode: [:]))
         assertEquals(dvorakConfig.keyMapping.resolve()["quote"], .q)
+        let (colemakConfig, colemakErrors) = parseConfig(
+            """
+            key-mapping.preset = 'colemak'
+            """
+        )
+        assertEquals(colemakErrors, [])
+        assertEquals(colemakConfig.keyMapping, KeyMapping(preset: .colemak, rawKeyNotationToKeyCode: [:]))
+        assertEquals(colemakConfig.keyMapping.resolve()["f"], .e)
     }
 }
