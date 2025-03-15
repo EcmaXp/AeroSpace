@@ -92,7 +92,7 @@ private let moveOutMacosUnconventionalWindow = "moving macOS fullscreen, minimiz
     return true
 }
 
-private func canMoveOutInDirection(window: Window, direction: CardinalDirection) -> Bool {
+@MainActor private func canMoveOutInDirection(window: Window, direction: CardinalDirection) -> Bool {
     let rootTilingContainer = window.nodeWorkspace?.rootTilingContainer
     if window.parent != rootTilingContainer {
         return true

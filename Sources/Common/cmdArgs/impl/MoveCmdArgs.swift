@@ -35,7 +35,7 @@ public struct MoveCmdArgs: CmdArgs {
         self.direction = .initialized(direction)
     }
 
-    public enum Boundaries: String, CaseIterable, Equatable {
+    public enum Boundaries: String, CaseIterable, Equatable, Sendable {
         case workspace
         case allMonitorsUnionFrame = "all-monitors-outer-frame"
     }
