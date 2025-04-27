@@ -85,7 +85,7 @@ extension Window {
         }
     }
 
-    func toLiveFocusOrNil() -> LiveFocus? { visualWorkspace.map { LiveFocus(windowOrNil: self, workspace: $0) } }
+    @MainActor func toLiveFocusOrNil() -> LiveFocus? { visualWorkspace.map { LiveFocus(windowOrNil: self, workspace: $0) } }
 }
 extension Workspace {
     @MainActor func focusWorkspace() -> Bool { setFocus(to: toLiveFocus()) }
@@ -119,6 +119,9 @@ extension Workspace {
 @MainActor private var onFocusChangedRecursionGuard = false
 // Should be called in refreshSession
 @MainActor func checkOnFocusChangedCallbacks() {
+    if refreshSessionEvent?.isStartup == true {
+        return
+    }
     let focus = focus
     let frozenFocus = focus.frozen
     var hasFocusChanged = false
@@ -153,11 +156,23 @@ extension Workspace {
 
 @MainActor private func onFocusedMonitorChanged(_ focus: LiveFocus) {
     if config.onFocusedMonitorChanged.isEmpty { return }
-    _ = config.onFocusedMonitorChanged.runCmdSeq(.defaultEnv.withFocus(focus), .emptyStdin)
+    guard let token: RunSessionGuard = .isServerEnabled else { return }
+    // todo potential optimization: don't run runSession if we are already in runSession
+    Task {
+        try await runSession(.onFocusedMonitorChanged, token) {
+            _ = try await config.onFocusedMonitorChanged.runCmdSeq(.defaultEnv.withFocus(focus), .emptyStdin)
+        }
+    }
 }
 @MainActor private func onFocusChanged(_ focus: LiveFocus) {
     if config.onFocusChanged.isEmpty { return }
-    _ = config.onFocusChanged.runCmdSeq(.defaultEnv.withFocus(focus), .emptyStdin)
+    guard let token: RunSessionGuard = .isServerEnabled else { return }
+    // todo potential optimization: don't run runSession if we are already in runSession
+    Task {
+        try await runSession(.onFocusChanged, token) {
+            _ = try await config.onFocusChanged.runCmdSeq(.defaultEnv.withFocus(focus), .emptyStdin)
+        }
+    }
 }
 
 @MainActor private func onWorkspaceChanged(_ oldWorkspace: String, _ newWorkspace: String) {
@@ -169,6 +184,6 @@ extension Workspace {
         environment["AEROSPACE_FOCUSED_WORKSPACE"] = newWorkspace
         environment["AEROSPACE_PREV_WORKSPACE"] = oldWorkspace
         process.environment = environment
-        Result { try process.run() }.getOrThrow() // todo It's not perfect to fail here
+        Result { try process.run() }.getOrDie() // todo It's not perfect to fail here
     }
 }

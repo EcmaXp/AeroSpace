@@ -1,9 +1,9 @@
 import Common
 
 enum AeroObj {
-    case window(Window)
+    case window(window: Window, title: String)
     case workspace(Workspace)
-    case app(AbstractApp)
+    case app(any AbstractApp)
     case monitor(Monitor)
 
     var kind: AeroObjKind {
@@ -161,13 +161,13 @@ extension String {
         switch (obj, formatVar) {
             case (_, .none): break
 
-            case (.window(let w), .workspace):
+            case (.window(let w, _), .workspace):
                 return w.nodeWorkspace.flatMap(AeroObj.workspace).map(expandFormatVar) ?? .success(.string("NULL-WOKRSPACE"))
-            case (.window(let w), .monitor):
+            case (.window(let w, _), .monitor):
                 return w.nodeMonitor.flatMap(AeroObj.monitor).map(expandFormatVar) ?? .success(.string("NULL-MONITOR"))
-            case (.window(let w), .app):
+            case (.window(let w, _), .app):
                 return expandFormatVar(obj: .app(w.app))
-            case (.window(_), .window): break
+            case (.window(_, _), .window): break
 
             case (.workspace(let ws), .monitor):
                 return expandFormatVar(obj: AeroObj.monitor(ws.workspaceMonitor))
@@ -177,11 +177,11 @@ extension String {
             case (.monitor(_), _): break
         }
         switch (obj, formatVar) {
-            case (.window(let w), .window(let f)):
+            case (.window(let w, let title), .window(let f)):
                 return switch f {
                     case .windowId: .success(.uint32(w.windowId))
                     case .windowIsFullscreen: .success(.bool(w.isFullscreen))
-                    case .windowTitle: .success(.string(w.title))
+                    case .windowTitle: .success(.string(title))
                 }
             case (.workspace(let w), .workspace(let f)):
                 return switch f {
@@ -197,7 +197,7 @@ extension String {
                 }
             case (.app(let a), .app(let f)):
                 return switch f {
-                    case .appBundleId: .success(.string(a.id ?? "NULL-APP-BUNDLE-ID"))
+                    case .appBundleId: .success(.string(a.bundleId ?? "NULL-APP-BUNDLE-ID"))
                     case .appName: .success(.string(a.name ?? "NULL-APP-NAME"))
                     case .appPid: .success(.int32(a.pid))
                     case .appExecPath: .success(.string(a.execPath ?? "NULL-APP-EXEC-PATH"))

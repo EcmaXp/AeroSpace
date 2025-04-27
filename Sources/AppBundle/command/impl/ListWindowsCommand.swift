@@ -4,7 +4,7 @@ import Common
 struct ListWindowsCommand: Command {
     let args: ListWindowsCmdArgs
 
-    func run(_ env: CmdEnv, _ io: CmdIo) -> Bool {
+    func run(_ env: CmdEnv, _ io: CmdIo) async throws -> Bool {
         let focus = focus
         var windows: [Window] = []
 
@@ -36,15 +36,21 @@ struct ListWindowsCommand: Command {
                 windows = windows.filter { $0.app.pid == pid }
             }
             if let appId = args.filteringOptions.appIdFilter {
-                windows = windows.filter { $0.app.id == appId }
+                windows = windows.filter { $0.app.bundleId == appId }
             }
         }
 
         if args.outputOnlyCount {
             return io.out("\(windows.count)")
         } else {
-            windows = windows.sortedBy([{ $0.app.name ?? "" }, \.title])
-            let list = windows.map { AeroObj.window($0) }
+            var _list: [(window: Window, title: String)] = [] // todo cleanup
+            for window in windows {
+                _list.append((window, try await window.title))
+            }
+            _list = _list.filter { $0.window.isBound }
+            _list = _list.sortedBy([{ $0.window.app.name ?? "" }, \.title])
+
+            let list = _list.map { AeroObj.window(window: $0.window, title: $0.title) }
             if args.json {
                 return switch list.formatToJson(args.format, ignoreRightPaddingVar: args._format.isEmpty) {
                     case .success(let json): io.out(json)

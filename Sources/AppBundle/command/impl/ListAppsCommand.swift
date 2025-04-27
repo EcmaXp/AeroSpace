@@ -5,9 +5,9 @@ struct ListAppsCommand: Command {
     let args: ListAppsCmdArgs
 
     func run(_ env: CmdEnv, _ io: CmdIo) -> Bool {
-        var result = apps
+        var result = Array(MacApp.allAppsMap.values)
         if let hidden = args.macosHidden {
-            result = result.filter { $0.asMacApp().nsApp.isHidden == hidden }
+            result = result.filter { $0.nsApp.isHidden == hidden }
         }
 
         if args.outputOnlyCount {
